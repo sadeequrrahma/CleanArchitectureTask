@@ -1,0 +1,17 @@
+@host = http://localhost:5261
+
+### Login — use data.user.id for profile URLs
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@demo.local",
+  "password": "Admin@123!"
+}
+
+### Profile (userId = GUID from data.user.id)
+@userId = 00000000-0000-0000-0000-000000000000
+GET {{host}}/api/users/profile?userId={{userId}}
+
+### Products — list
+GET {{host}}/api/products?page=1&pageSize=10
