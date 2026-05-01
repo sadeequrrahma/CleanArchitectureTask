@@ -1,6 +1,6 @@
 @host = http://localhost:5261
 
-### Login — use data.user.id for profile URLs
+### Login — copy data.accessToken for Bearer requests below
 POST {{host}}/api/auth/login
 Content-Type: application/json
 
@@ -9,9 +9,11 @@ Content-Type: application/json
   "password": "Admin@123!"
 }
 
-### Profile (userId = GUID from data.user.id)
-@userId = 00000000-0000-0000-0000-000000000000
-GET {{host}}/api/users/profile?userId={{userId}}
+### Profile (Authorization: Bearer <data.accessToken>)
+@token = REPLACE_WITH_JWT_FROM_LOGIN
+GET {{host}}/api/users/profile
+Authorization: Bearer {{token}}
 
-### Products — list
+### Products — list (requires JWT)
 GET {{host}}/api/products?page=1&pageSize=10
+Authorization: Bearer {{token}}

@@ -1,12 +1,14 @@
 using CleanArchitectureTask.Application.DTOs.Auth;
 using CleanArchitectureTask.Application.Interfaces.Services;
 using CleanArchitectureTask.Common.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CleanArchitectureTask.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

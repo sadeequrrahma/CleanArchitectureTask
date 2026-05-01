@@ -11,15 +11,18 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IBlobStorageService _blobStorage;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly IMapper _mapper;
 
     public AuthService(
         IUserRepository userRepository,
         IBlobStorageService blobStorage,
+        IJwtTokenService jwtTokenService,
         IMapper mapper)
     {
         _userRepository = userRepository;
         _blobStorage = blobStorage;
+        _jwtTokenService = jwtTokenService;
         _mapper = mapper;
     }
 
@@ -66,7 +69,15 @@ public class AuthService : IAuthService
     }
 
     private AuthResponse BuildAuthResponse(User user)
-        => new() { User = MapUserToProfileDto(user) };
+    {
+        var (token, expiresAt) = _jwtTokenService.CreateToken(user.Id, user.Email, user.Role);
+        return new AuthResponse
+        {
+            AccessToken = token,
+            ExpiresAtUtc = expiresAt,
+            User = MapUserToProfileDto(user)
+        };
+    }
 
     private UserProfileDto MapUserToProfileDto(User user)
     {

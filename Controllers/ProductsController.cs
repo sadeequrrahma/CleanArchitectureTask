@@ -1,12 +1,14 @@
 using CleanArchitectureTask.Application.DTOs.Product;
 using CleanArchitectureTask.Application.Interfaces.Services;
 using CleanArchitectureTask.Common.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CleanArchitectureTask.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;

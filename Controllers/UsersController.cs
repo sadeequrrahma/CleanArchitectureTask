@@ -1,13 +1,16 @@
+using System.Security.Claims;
 using CleanArchitectureTask.Application.DTOs.Auth;
 using CleanArchitectureTask.Application.Interfaces.Services;
 using CleanArchitectureTask.Common.Constants;
 using CleanArchitectureTask.Common.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CleanArchitectureTask.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -19,12 +22,13 @@ public class UsersController : ControllerBase
         _userProfileService = userProfileService;
     }
 
-    /// <summary>Use <c>userId</c> from login/register (<c>data.user.id</c>).</summary>
+    /// <summary>Returns the profile for the authenticated user (JWT).</summary>
     [HttpGet("profile")]
     [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetProfile([FromQuery] Guid userId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProfile(CancellationToken cancellationToken)
     {
+        var userId = GetCurrentUserId();
         var profile = await _authService.GetProfileAsync(userId, cancellationToken);
         if (profile is null)
             return NotFound(ApiResponse<UserProfileDto>.Fail("User not found."));
@@ -32,7 +36,7 @@ public class UsersController : ControllerBase
         return Ok(ApiResponse<UserProfileDto>.Ok(profile));
     }
 
-    /// <summary>Multipart field name: <c>file</c>. Requires <c>userId</c> query.</summary>
+    /// <summary>Multipart field name: <c>file</c>. Authenticated user only (JWT).</summary>
     [HttpPut("profile-image")]
     [Consumes("multipart/form-data")]
     [RequestFormLimits(MultipartBodyLengthLimit = MediaConstants.MaxProfileImageBytes)]
@@ -41,13 +45,13 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> UploadProfileImage(
-        [FromQuery] Guid userId,
         IFormFile file,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
             return BadRequest(ApiResponse<UserProfileDto>.Fail("Image file is required."));
 
+        var userId = GetCurrentUserId();
         await using var stream = file.OpenReadStream();
         var updated = await _userProfileService.UpdateProfileImageAsync(
             userId,
@@ -61,5 +65,13 @@ public class UsersController : ControllerBase
             return NotFound(ApiResponse<UserProfileDto>.Fail("User not found."));
 
         return Ok(ApiResponse<UserProfileDto>.Ok(updated, "Profile image updated."));
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (value is null || !Guid.TryParse(value, out var id))
+            throw new UnauthorizedAccessException("Invalid or missing user identity.");
+        return id;
     }
 }
